@@ -74,3 +74,146 @@ anova(tr.reg2, tr.reg3)
 # the real experiment.  We have not fully recovered the impact because there are probably
 # things we are not controling for, for example geography. This analysis is not 
 # valid for capturing the exact impact of training.
+
+##################### Question 2 ###########################
+# 2 Infant Nutrition
+# Revisit the infant nutrition data from homeworks 3 and 4.
+
+# In homework 3, we fit three different models:
+
+# E[woh|age] = β0 + β1age
+# E[woh|age] = β0 + β1age + β2age2
+# E[woh|age] = β0 + β1age + β21{age > 7} + β3age × 1{age > 7}
+
+# Then in homework 4 we used our residual diagnostics to select one of these models. 
+# Now we will revisit this question using the model building techniques we’ve learned so far.
+
+nutrition <- read.csv("nutrition.csv")
+woh <- nutrition$woh
+age <- nutrition$age
+
+# (a) In homework 3, residual plots motivated us to consider age2. Does the F test agree that
+# this addition is worthwhile? What order polynomial fit is suggested by F testing?
+
+# Run a regression on just age
+nut.reg1 <- lm(woh ~ age)
+
+# Runa regression that includes higher order polynomial terms
+age2 <- age^2
+age3 <- age^3
+age4 <- age^4
+age5 <- age^5
+age6 <- age^6
+
+
+nut.reg2 <- lm(woh ~ age + age2)
+nut.reg3 <- lm(woh ~ age + age2 + age3)
+nut.reg4 <- lm(woh ~ age + age2 + age3 + age4)
+nut.reg5 <- lm(woh ~ age + age2 + age3 + age4 + age5)
+nut.reg6 <- lm(woh ~ age + age2 + age3 + age4 + age5 + age6)
+
+
+
+# Compare with a partial f test
+anova(nut.reg1, nut.reg2)
+anova(nut.reg2, nut.reg3)
+anova(nut.reg3, nut.reg4)
+anova(nut.reg4, nut.reg5)
+anova(nut.reg5, nut.reg6)
+
+# According to the partial F tests, we should use the 5th 
+
+# (b) Compare the first model (just age) to the final model you tested in (a). 
+# What do these results tell you? How would you proceed?
+
+# Calculate model with dummy variable
+dummy7 <- c(rep(0,7),rep(1,length(age)-7))
+nut.reg.d <- lm(woh ~ dummy7*age)
+xgrid3 <- data.frame(age,dummy7)
+
+# Plot the 5th degree and dummy regressions
+xgrid2 <- data.frame(age=0:72, age2=(0:72)^2, age3=(0:72)^3, age4=(0:72)^4, age5=(0:72)^5)
+par(mfrow=c(1,1))
+plot(age, woh, pch=20, xlab = "Age in Months", ylab = "Weight/Height Ratio", main = "Age and Weight/Height Ratio")
+lines(age[1:7],predict(nut.reg.d, data = xgrid3)[1:7],  col = 3, lwd = 2)
+lines(age[8:72],predict(nut.reg.d, data = xgrid3)[8:72],  col = 3, lwd = 2)
+lines(xgrid2$age, predict(nut.reg5, newdata=xgrid2), col = 4)
+legend("bottomright", legend = c("Dummy","5th Degree"), lty = 1, col = c(3,4))
+
+
+# The two regressiobns look similar
+
+# (c) Using our suite of diagnostic tools, evaluate the final model you’ve selected (i.e. the 
+# highest order polynomial) against the simple linear model (just age) and the third model 
+# displayed above, with a dummy for the first 7 observations. Based on the residual plots, 
+# what do you conclude about each model?
+
+# Plot diagnostics for dummy regression
+par(mfrow=c(1,3))
+plot(nut.reg.d$fitted.values,rstudent(nut.reg.d), pch=20, main = "Fitted Values and Studentized Residuals")
+abline(h=0)
+hist(rstudent(nut.reg.d))
+qqnorm(rstudent(nut.reg.d))
+abline(a=0,b=1)
+
+
+
+# Plot diagnostics for 5th order regression
+par(mfrow=c(1,3))
+plot(nut.reg5$fitted.values,rstudent(nut.reg5), pch=20, main = "Fitted Values and Studentized Residuals")
+abline(h=0)
+hist(rstudent(nut.reg5))
+qqnorm(rstudent(nut.reg5))
+abline(a=0,b=1)
+
+
+# (d) Upon a scatterplot of the data, overlap predicted regression lines and preditive 
+# intervals for the third model and the model you selected in (a) and (b).
+
+# Create the prediction intervals
+nut.reg.d.pred <- predict(nut.reg.d, newdata = xgrid3, interval = "prediction", level = 0.95)
+nut.reg5.pred <- predict(nut.reg5, newdata = xgrid2, interval = "prediction", level = 0.95)
+
+
+# Plot the points
+par(mfrow=c(1,1))
+plot(age, woh, pch=20, xlab = "Age in Months", ylab = "Weight/Height Ratio", main = "Age and Weight/Height Ratio")
+
+# Plot the predictions of the dummy regression
+lines(age[1:7],nut.reg.d.pred[1:7,1],  col = 3, lwd = 2)
+lines(age[8:72],nut.reg.d.pred[8:72,1],  col = 3, lwd = 2)
+
+# Plot the lower confidence interval of the dummy regression
+lines(age[1:7],nut.reg.d.pred[1:7,2],  col = 3, lwd = 1, lty = 2)
+lines(age[8:72],nut.reg.d.pred[8:72,2],  col = 3, lwd = 1, lty = 2)
+
+# Plot the upper confidence interval of the dummy regression
+lines(age[1:7],nut.reg.d.pred[1:7,3],  col = 3, lwd = 1, lty = 2)
+lines(age[8:72],nut.reg.d.pred[8:72,3],  col = 3, lwd = 1, lty = 2)
+
+#Plot the predictions of the 5th order polynomial regression
+lines(xgrid2$age, nut.reg5.pred[,1], col = 4, lwd = 2)
+
+#Plot the upper and lower confidence interval of the 5th order polynomial regression
+lines(xgrid2$age, nut.reg5.pred[,2], col = 4, lwd = 1, lty = 2)
+lines(xgrid2$age, nut.reg5.pred[,3], col = 4, lwd = 1, lty = 2)
+
+# Add a legend
+legend("bottomright", legend = c("Dummy","5th Degree"), lty = 1, col = c(3,4))
+
+# (e) Overall, what model do you prefer and why?
+
+# Overall, I prefer the regression with the dummy variable.  It is simpler, and has less
+# risk of overfitting the data.  Most importantly, we have a non-statistical reason to
+# treat the first 7 dataponts differently.
+
+##################### Question 3 ###########################
+# 3 Beef – It’s What’s for Dinner
+# Revisit the cattle ranch and voting data from homework 3.
+# We have vote results (% YES), average SIZE of farm (hundreds of acres), and average VAL of 
+# products sold annually by each farm (in $ thousands) for each of Montana’s 56 counties.
+
+# In homework 3 we tried three models:
+# > reg1 <- lm(YES ~ SIZE + log(VAL))
+# > reg2 <- lm(YES ~ SIZE)
+# > reg3 <- lm(YES ~ SIZE*log(VAL))
