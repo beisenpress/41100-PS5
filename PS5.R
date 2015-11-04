@@ -217,3 +217,92 @@ legend("bottomright", legend = c("Dummy","5th Degree"), lty = 1, col = c(3,4))
 # > reg1 <- lm(YES ~ SIZE + log(VAL))
 # > reg2 <- lm(YES ~ SIZE)
 # > reg3 <- lm(YES ~ SIZE*log(VAL))
+
+beef <- read.csv("beef.csv")
+yes <- beef$YES
+size <- beef$SIZE
+val <- beef$VAL
+log.val <- log(val)
+
+
+# (a) Create log(YES). Does using this as the dependent variable lead to better regressions in a 
+# demonstrable sense? If yes, how so?
+
+
+# Run the old regression without interacting log.val and size
+reg.beef1 <- lm(yes ~ log.val + size)
+summary(reg.beef1)
+
+# Print our diagnostic plots
+par(mfrow=c(1,3))
+plot(reg.beef1$fitted.values,rstudent(reg.beef1), pch=20, main = "Fitted Values and Studentized Residuals")
+abline(h=0)
+hist(rstudent(reg.beef1))
+qqnorm(rstudent(reg.beef1))
+abline(a=0,b=1)
+
+# Now run a regression without interaction, but taking the log of YES
+reg.beef4 <- lm(log(yes) ~ log.val + size)
+summary(reg.beef4)
+
+# Print our diagnostic plots
+par(mfrow=c(1,3))
+plot(reg.beef4$fitted.values,rstudent(reg.beef4), pch=20, main = "Fitted Values and Studentized Residuals")
+abline(h=0)
+hist(rstudent(reg.beef4))
+qqnorm(rstudent(reg.beef4))
+abline(a=0,b=1)
+
+# Taking the log of YES makes the diagnostic plots look maybe slightly more normal
+
+# Run the old with just size
+reg.beef2 <- lm(yes ~ size)
+summary(reg.beef2)
+
+# Run the old regression interacting the dependent variables
+reg.beef3 <- lm(yes ~ log.val*size)
+summary(reg.beef3)
+
+# Print our diagnostic plots
+par(mfrow=c(1,3))
+plot(reg.beef3$fitted.values,rstudent(reg.beef3), pch=20, main = "Fitted Values and Studentized Residuals")
+abline(h=0)
+hist(rstudent(reg.beef3))
+qqnorm(rstudent(reg.beef3))
+abline(a=0,b=1)
+
+# Run the regression with interaction, taking Log of YES
+reg.beef6 <- lm(log(yes) ~ log.val*size)
+summary(reg.beef6)
+
+# Print our diagnostic plots
+par(mfrow=c(1,3))
+plot(reg.beef6$fitted.values,rstudent(reg.beef6), pch=20, main = "Fitted Values and Studentized Residuals")
+abline(h=0)
+hist(rstudent(reg.beef6))
+qqnorm(rstudent(reg.beef6))
+abline(a=0,b=1)
+
+# Log Yes looks a little worse here, if anything.
+
+# (b) Put aside log(YES). Compare reg1 and reg2 using the partial F test. From these results, 
+# is it advisable to pursue reg3?
+
+anova(reg.beef2,reg.beef1)
+
+# According to the partial f F test, adding log.val does not help.  So we dont even need
+# to look into model 3.
+
+# (c) What if we pursue reg3 anyway? Is this worthwhile compared to reg1? Compare your results 
+# to part (b) and discuss your findings. What model do you prefer based on this?
+
+anova(reg.beef2,reg.beef3)
+
+# With the interaction term, log.val is significant.  It is worthwhile.  I prefer this model.
+
+# (d) Based on all these results so far, run one more partial F test to find the best model.
+reg.beef7 <- lm(yes ~ log.val*size - log.val)
+summary(reg.beef7)
+
+anova(reg.beef7,reg.beef3)
+# This says the most complex model is the best.
